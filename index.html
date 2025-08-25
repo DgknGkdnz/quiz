@@ -381,6 +381,46 @@
             color: #666;
         }
 
+        .incorrect-question {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .incorrect-question-text {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 10px;
+        }
+
+        .answer-comparison {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .user-answer, .correct-answer {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .user-answer {
+            color: #dc2626;
+        }
+
+        .correct-answer {
+            color: #059669;
+        }
+
+        .answer-label {
+            font-weight: 500;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
         .start-screen {
             text-align: center;
             padding: 50px 20px;
@@ -474,6 +514,10 @@
                         <div class="stat-value" id="successRate">0%</div>
                         <div class="stat-label">Başarı Oranı</div>
                     </div>
+                </div>
+                <div id="incorrectAnswersSection" style="margin-top: 30px; display: none; background: white; border-radius: 12px; padding: 20px; border: 2px solid #fecaca;">
+                    <h4 style="color: #dc2626; margin-bottom: 15px; text-align: left; font-size: 1.2rem;">🚫 Yanlış Cevaplanmış Sorular:</h4>
+                    <div id="incorrectAnswersList"></div>
                 </div>
                 <button class="btn" onclick="restartQuiz()" style="margin-top: 20px;">Tekrar Başla</button>
             </div>
@@ -5048,18 +5092,83 @@
 
             let correct = 0;
             let incorrect = 0;
+            let incorrectQuestions = [];
+
+            console.log('showSummary çalışıyor - sessionAnswers:', sessionAnswers);
+            console.log('currentSection:', currentSection);
 
             quizData[currentSection].questions.forEach(question => {
                 if (sessionAnswers[question.id] === question.answerIndex) {
                     correct++;
                 } else {
                     incorrect++;
+                    incorrectQuestions.push({
+                        question: question,
+                        userAnswer: sessionAnswers[question.id],
+                        correctAnswer: question.answerIndex
+                    });
                 }
             });
+
+            console.log('Yanlış sorular:', incorrectQuestions);
 
             document.getElementById('correctCount').textContent = correct;
             document.getElementById('incorrectCount').textContent = incorrect;
             document.getElementById('successRate').textContent = Math.round((correct / (correct + incorrect)) * 100) + '%';
+
+            // Yanlış soruları göster
+            if (incorrectQuestions.length > 0) {
+                console.log('Yanlış soruları gösteriliyor...');
+                displayIncorrectAnswers(incorrectQuestions);
+            } else {
+                console.log('Hiç yanlış soru yok');
+                document.getElementById('incorrectAnswersSection').style.display = 'none';
+            }
+        }
+
+        function displayIncorrectAnswers(incorrectQuestions) {
+            console.log('displayIncorrectAnswers çalışıyor, sorular:', incorrectQuestions);
+            
+            const incorrectAnswersSection = document.getElementById('incorrectAnswersSection');
+            const incorrectAnswersList = document.getElementById('incorrectAnswersList');
+            
+            console.log('incorrectAnswersSection element:', incorrectAnswersSection);
+            console.log('incorrectAnswersList element:', incorrectAnswersList);
+            
+            incorrectAnswersSection.style.display = 'block';
+            incorrectAnswersList.innerHTML = '';
+
+            incorrectQuestions.forEach((item, index) => {
+                const questionDiv = document.createElement('div');
+                questionDiv.className = 'incorrect-question';
+                
+                const userAnswerText = item.userAnswer !== undefined ? item.question.choices[item.userAnswer] : 'Cevaplanmadı';
+                const correctAnswerText = item.question.choices[item.correctAnswer];
+                
+                console.log(`Soru ${index + 1}:`, {
+                    question: item.question.text,
+                    userAnswer: userAnswerText,
+                    correctAnswer: correctAnswerText
+                });
+                
+                questionDiv.innerHTML = `
+                    <div class="incorrect-question-text">${index + 1}. ${item.question.text}</div>
+                    <div class="answer-comparison">
+                        <div class="user-answer">
+                            <div class="answer-label">Sizin Cevabınız:</div>
+                            <div>${userAnswerText}</div>
+                        </div>
+                        <div class="correct-answer">
+                            <div class="answer-label">Doğru Cevap:</div>
+                            <div>${correctAnswerText}</div>
+                        </div>
+                    </div>
+                `;
+                
+                incorrectAnswersList.appendChild(questionDiv);
+            });
+            
+            console.log('Yanlış sorular bölümü gösterildi');
         }
 
         function restartQuiz() {
